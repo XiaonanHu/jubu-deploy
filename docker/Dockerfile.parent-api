@@ -18,6 +18,7 @@ COPY requirements-parent-api.txt .
 RUN pip install --no-cache-dir -r requirements-parent-api.txt
 
 # ---------- Clone repos from GitHub ----------
+ARG CACHE_BUST=1
 ARG GITHUB_TOKEN
 ARG PARENT_APP_BRANCH=main
 ARG DATASTORE_BRANCH=main
