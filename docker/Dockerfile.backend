@@ -1,0 +1,51 @@
+# ============================================================
+# Jubu Child-Facing Backend
+# Runs: livekit_api.py (8001), jubu_thinker.py, bot_manager.py
+# ============================================================
+FROM python:3.12-slim AS base
+
+# System deps for grpcio, PyAudio, soundfile, spacy, etc.
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    build-essential \
+    portaudio19-dev \
+    libsndfile1 \
+    ffmpeg \
+    curl \
+    git \
+    && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /app
+
+# ---------- Python dependencies ----------
+COPY requirements-deploy.txt .
+RUN pip install --no-cache-dir -r requirements-deploy.txt
+
+# ---------- Shared library: jubu_datastore (from GitHub) ----------
+# Uses a build arg for the GitHub token so we can clone private repos.
+# If the repo is public, TOKEN is not needed.
+ARG GITHUB_TOKEN=""
+RUN if [ -n "$GITHUB_TOKEN" ]; then \
+        git clone https://${GITHUB_TOKEN}@github.com/XiaonanHu/jubu_datastore.git /app/jubu_datastore; \
+    else \
+        git clone https://github.com/XiaonanHu/jubu_datastore.git /app/jubu_datastore; \
+    fi && \
+    pip install --no-cache-dir -e /app/jubu_datastore
+
+# ---------- Application code ----------
+# Copy the entire backend (jubu_chat/ is inside here)
+COPY backend/ /app/
+
+# Install jubu_chat from the local copy
+RUN if [ -d /app/jubu_chat ] && [ -f /app/jubu_chat/setup.py -o -f /app/jubu_chat/pyproject.toml ]; then \
+        pip install --no-cache-dir -e /app/jubu_chat; \
+    fi
+
+# ---------- Process manager ----------
+RUN pip install --no-cache-dir supervisor
+COPY docker/supervisord-backend.conf /etc/supervisor/conf.d/supervisord.conf
+
+# ---------- Health check ----------
+HEALTHCHECK --interval=10s --timeout=5s --retries=3 \
+    CMD curl -f http://localhost:8001/health || exit 1
+
+CMD ["supervisord", "-c", "/etc/supervisor/conf.d/supervisord.conf"]

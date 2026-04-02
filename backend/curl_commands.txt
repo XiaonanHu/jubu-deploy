@@ -1,0 +1,5 @@
+# Get token of a parent profile
+curl -X POST "http://localhost:8000/api/v1/auth/login" \\n  -H "Content-Type: application/x-www-form-urlencoded" \\n  -d "username=test@example.com&password=Test12345"
+
+# Get conversations of a child
+curl -X GET "http://localhost:8000/api/v1/conversations/?child_id=70150f63-415a-488c-b1e7-f01336dceac3&limit=10" \  -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJ0ZXN0QGV4YW1wbGUuY29tIiwiZXhwIjoxNzQ5ODU5MDMzfQ.23D4kVMYHYmo6XH9lzAShiSupq0-pkTWS2bnGd4A5mw"

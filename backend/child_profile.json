@@ -1,0 +1,12 @@
+{
+  "id": "408bae6a-9f13-4da1-b3eb-6c63ac78d529",
+  "name": "X",
+  "age": 5,
+  "parent_id": "9060bd15-4f78-446d-b7bc-c3102ce63465",
+  "interests": [],
+  "preferences": {
+    "favorite_color": "blue",
+    "favorite_animal": "tiger"
+  },
+  "is_active": true
+} 

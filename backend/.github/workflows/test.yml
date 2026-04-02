@@ -1,0 +1,114 @@
+name: Tests
+
+on: [push, pull_request]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.12'
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip setuptools wheel
+          pip install -r requirements-core.txt
+          pip install -e .[dev]
+      - name: Stub jubu_datastore
+        run: |
+          mkdir -p jubu_datastore/common jubu_datastore/dto jubu_datastore/datastores
+          touch jubu_datastore/__init__.py jubu_datastore/common/__init__.py jubu_datastore/dto/__init__.py
+          
+          # Stub Exceptions
+          cat <<EOF > jubu_datastore/common/exceptions.py
+          class JubuChatError(Exception): pass
+          class AuthenticationError(JubuChatError): pass
+          class ConfigFileNotFoundError(JubuChatError): pass
+          class ConfigParsingError(JubuChatError): pass
+          class ConfigurationError(JubuChatError): pass
+          class ConfigValidationError(JubuChatError): pass
+          class ContentFilterError(JubuChatError): pass
+          class ConversationDataError(JubuChatError): pass
+          class ConversationError(JubuChatError): pass
+          class ConversationStateError(JubuChatError): pass
+          class DatabaseConnectionError(JubuChatError): pass
+          class DatabaseError(JubuChatError): pass
+          class DatabaseQueryError(JubuChatError): pass
+          class DatastoreError(JubuChatError): pass
+          class FactExtractionError(JubuChatError): pass
+          class FactsDataError(JubuChatError): pass
+          class FileStorageError(JubuChatError): pass
+          class InappropriateContentError(JubuChatError): pass
+          class InteractionContextError(JubuChatError): pass
+          class InteractionHandlerError(JubuChatError): pass
+          class JSONParsingError(JubuChatError): pass
+          class LoggingError(JubuChatError): pass
+          class ModelError(JubuChatError): pass
+          class ModelInferenceError(JubuChatError): pass
+          class ModelInitializationError(JubuChatError): pass
+          class ModelNotFoundError(JubuChatError): pass
+          class ParsingError(JubuChatError): pass
+          class PersonalInformationError(JubuChatError): pass
+          class ProfileDataError(JubuChatError): pass
+          class PromptError(JubuChatError): pass
+          class RateLimitError(JubuChatError): pass
+          class ResourceNotFoundError(JubuChatError): pass
+          class ResponseGenerationError(JubuChatError): pass
+          class SafetyError(JubuChatError): pass
+          class SafetyEvaluationError(JubuChatError): pass
+          class SchemaValidationError(JubuChatError): pass
+          class StorageError(JubuChatError): pass
+          class StoryDataError(JubuChatError): pass
+          class TelemetryError(JubuChatError): pass
+          class UserDataError(JubuChatError): pass
+          class UtilityError(JubuChatError): pass
+          EOF
+
+          # Stub Enums
+          cat <<EOF > jubu_datastore/common/enums.py
+          from enum import Enum
+          class ConversationState(str, Enum):
+              ACTIVE = "active"
+              COMPLETED = "completed"
+              ARCHIVED = "archived"
+          EOF
+
+          # Stub Entities
+          cat <<EOF > jubu_datastore/dto/entities.py
+          from pydantic import BaseModel
+          class ChildProfile(BaseModel): pass
+          class User(BaseModel): pass
+          EOF
+
+          # Stub Constants
+          cat <<EOF > jubu_datastore/common/constants.py
+          DEFAULT_ARCHIVE_DAYS = 30
+          DEFAULT_FACT_EXPIRATION_DAYS = 90
+          DEFAULT_PROFILE_INACTIVITY_DAYS = 365
+          DEFAULT_STORY_VIEW_LIMIT = 10
+          MAX_RETRIES = 3
+          RETRY_DELAY = 1.0
+          EOF
+
+          # Stub Datastores
+          echo "class BaseDatastore: pass" > jubu_datastore/base_datastore.py
+          echo "class ConversationDatastore: pass" > jubu_datastore/conversation_datastore.py
+          echo "class ConversationModel: pass" >> jubu_datastore/conversation_datastore.py
+          echo "class ConversationTurnModel: pass" >> jubu_datastore/conversation_datastore.py
+          echo "class DatastoreFactory: pass" > jubu_datastore/datastore_factory.py
+          echo "class FactsDatastore: pass" > jubu_datastore/facts_datastore.py
+          echo "class ChildFactModel: pass" >> jubu_datastore/facts_datastore.py
+          echo "class InteractionContextsDatastore: pass" > jubu_datastore/interaction_contexts_datastore.py
+          echo "class ProfileDatastore: pass" > jubu_datastore/profile_datastore.py
+          echo "class ChildProfileModel: pass" >> jubu_datastore/profile_datastore.py
+          echo "class StoryDatastore: pass" > jubu_datastore/story_datastore.py
+          echo "class StoryModel: pass" >> jubu_datastore/story_datastore.py
+          echo "class UserDatastore: pass" > jubu_datastore/user_datastore.py
+          echo "class UserModel: pass" >> jubu_datastore/user_datastore.py
+
+      - name: Run tests
+        run: |
+          export PYTHONPATH=$PYTHONPATH:.
+          pytest jubu_chat/tests/unit/ evaluation/data_generation/tests

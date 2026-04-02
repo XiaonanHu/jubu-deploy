@@ -1,0 +1,84 @@
+system:
+  name: "KidsChat"
+  version: "1.0.0"
+  log_level: "INFO"
+  telemetry_provider: "langfuse"
+  
+conversation:
+  model: "gemini-2.0-flash"
+  threshold: 0.7
+  default_interaction: "chitchat"
+  
+facts_extraction:
+  model: "gemini-2.0-flash"
+  short_term_retention_hours: 24
+  long_term_retention_days: 30
+
+safety_evaluation:
+  model: "gemini-2.0-flash"
+  threshold: 0.7
+  default_safety_evaluation: "moderate"
+  
+safety:
+  content_filter_level: "strict"
+  inappropriate_topics:
+    - "violence"
+    - "adult_content"
+    - "drugs"
+    - "gambling"
+    - "profanity"
+    - "hate_speech"
+    - "self_harm"
+    - "suicide"
+    - "harm"
+    - "sexual_content"
+    - "explicit_language"
+    - "offensive_terms"
+    - "bullying"
+    
+  age_appropriate_language: true
+  max_consecutive_unsafe_attempts: 3
+  unsafe_response_action: "redirect"
+  
+speech:
+  text_to_speech_provider: "elevenlabs"
+  speech_to_text_provider: "whisper"
+  default_voice: "child_friendly"
+  default_speed: 1.0
+  voice_variety: true
+  
+user_experience:
+  response_timeout_seconds: 5
+  idle_timeout_minutes: 10
+  
+memory:
+  conversation_history_length: 10
+  persistent_storage: true
+
+# Capability evaluation at conversation end (2-step: select relevant items, then score)
+capability_evaluation:
+  enabled: true
+  run_at_end: true
+  model: null   # null = use conversation model
+  max_turns: 20
+  max_chars: 15000
+
+# Parent-facing summary and activity suggestions at conversation end
+parent_summary:
+  enabled: true
+  run_at_end: true
+  model: null   # null = use conversation model
+  max_summary_words: 200
+  max_turns: 20
+  max_chars: 15000
+  
+analytics:
+  track_engagement: true
+  track_mode_transitions: true
+  track_response_times: true
+  track_safety_triggers: true
+  
+development:
+  debug_mode: true
+  log_prompts: true
+  log_responses: true

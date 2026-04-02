@@ -1,0 +1,96 @@
+.cursorrules
+.DS_Store
+.env
+.pytest_cache
+__pycache__
+*/__pycache__
+*/*/__pycache__
+*/*/*/__pycache__
+# Ignore all .pyc files
+*.pyc
+# Ignore all .pyo files
+*.pyo
+*.pyd
+*.log
+
+
+logs
+api_server/references
+debug_first_chunk.raw
+sandbox
+my_test_voice_correct_format.wav
+kidschat.db
+temp_audio
+evaluation/raw_data/childes_dataset.json
+evaluation/raw_data/childes_conversations.json
+evaluation/raw_data/childs_data_age_3_above.json
+evaluation/raw_data
+evaluation/notebooks/test.ipynb
+llm_output
+voicesvoices
+
+# Ignore all .pyd files
+api_server/references
+infrastructure/logs
+sandbox
+evaluation/raw_data
+voices/
+api_server/testing_files
+
+*/obsolete_*.py
+obsolete_*.py
+tools
+
+# Data generation folder (renamed from datasets)
+evaluation/data_generation/source_data/*.json
+evaluation/data_generation/*.jsonl
+evaluation/data_generation/*.ipynb
+evaluation/data_generation/notebooks
+
+# New pipeline structure - ignore run outputs but keep config
+evaluation/runs/*/01_tagging/*.jsonl
+evaluation/runs/*/02_filtering/*.jsonl
+evaluation/runs/*/03_normalization/*.jsonl
+evaluation/runs/*/04_segmentation/*.jsonl
+evaluation/runs/*/05_analysis/*.ipynb
+evaluation/runs/*/05_analysis/plots/*.png
+evaluation/runs/*/06_selection/*.jsonl
+evaluation/runs/*/07_annotation/*.txt
+# Eval runs: ignore test eval runs (kept locally, not in git)
+evaluation/runs/*/evals/*_test*/
+evaluation/runs/*/evals/*/*/*.json
+evaluation/runs/*/evals/*/*/*.jsonl
+evaluation/runs/*/evals/*/*/figures
+evaluation/runs/*/evals/*/*/*.txt
+evaluation/runs/*/evals/*/*/*.md
+evaluation/runs/*/*.json
+evaluation/runs/*/evals/*/eval_*/04_analysis/figures
+evaluation/runs/*/evals/*/eval_*/04_analysis/*.json
+evaluation/runs/*/evals/*/eval_*/03_metrics
+
+
+
+# Legacy folders (now empty, archived, or migrated)
+evaluation/rubric_analysis/
+evaluation/segments/
+evaluation/rubric_tags/archive/*.jsonl
+evaluation/rubric_tags
+evaluation/ARCHIVE
+evaluation/*.backup
+evaluation/*/*.backup
+evaluation/*/*/*.backup
+evaluation/*/*/*/*.backup
+evaluation/live_evals/results/*
+evaluation/live_evals/
+# Latency benchmarking: ignore run outputs (scripts and test_data/manifest.json are versioned)
+latency/runs
+# Legacy root-level latency dirs (migrated to latency/; safe to delete)
+latency_runs
+latency_test_data
+credentials/*
+reference/
+
+
+.logs/*
+.logs
+docs

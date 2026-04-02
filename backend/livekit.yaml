@@ -1,0 +1,31 @@
+port: 7880
+log_level: debug
+
+# bind to all interfaces so other devices on LAN can reach it
+bind_addresses:
+  - "0.0.0.0"
+
+rtc:
+  tcp_port: 7881
+  port_range_start: 7882
+  port_range_end: 7982
+
+  # Set to your machine's LAN IP (e.g. 192.168.1.176) so phones on WiFi can do WebRTC.
+  # Find it: ipconfig getifaddr en0  (Mac) or hostname -I (Linux)
+  node_ip: 192.168.8.140  # Slate AX IP address
+  #node_ip: 172.31.4.97 # Pixel hotspot IP address
+  # node_ip: 172.20.10.3 # iPhone hotspot IP address
+  use_external_ip: false
+
+# API keys for generating tokens (LiveKit 1.9+ requires secret length >= 32).
+# Backend/bot must use the same secret: set LIVEKIT_API_SECRET in .env to the value below.
+keys:
+  devkey: "devkey-secret-at-least-32-characters!!"
+
+# OPTIONAL: only if you already have a backend to receive webhooks.
+# If not needed yet, you can delete this entire section.
+# webhook:
+#   api_key: devkey              # must match one of the keys above
+#   urls:
+#     - "http://localhost:8080/livekit/webhook"
+

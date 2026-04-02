@@ -1,0 +1,39 @@
+# ============================================================
+# Jubu Parent-Facing API (app_backend/)
+# Runs: uvicorn on port 8000
+# Shares jubu_datastore with the child-facing backend
+# ============================================================
+FROM python:3.12-slim
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    build-essential \
+    curl \
+    git \
+    && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /app
+
+# ---------- Parent API dependencies ----------
+# The parent app backend has its own requirements.
+# If it doesn't have a separate requirements.txt, it relies on jubu_datastore + FastAPI.
+COPY requirements-parent-api.txt .
+RUN pip install --no-cache-dir -r requirements-parent-api.txt
+
+# ---------- Shared library: jubu_datastore ----------
+ARG GITHUB_TOKEN=""
+RUN if [ -n "$GITHUB_TOKEN" ]; then \
+        git clone https://${GITHUB_TOKEN}@github.com/XiaonanHu/jubu_datastore.git /app/jubu_datastore; \
+    else \
+        git clone https://github.com/XiaonanHu/jubu_datastore.git /app/jubu_datastore; \
+    fi && \
+    pip install --no-cache-dir -e /app/jubu_datastore
+
+# ---------- Application code ----------
+COPY parent-api/ /app/
+
+# ---------- Health check ----------
+HEALTHCHECK --interval=10s --timeout=5s --retries=3 \
+    CMD curl -f http://localhost:8000/health || exit 1
+
+EXPOSE 8000
+CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]

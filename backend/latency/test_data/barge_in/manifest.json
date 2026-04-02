@@ -1,0 +1,31 @@
+{
+  "description": "Barge-in test scenarios. Trigger WAVs (wav_dir) elicit long responses; interrupt WAVs (interrupt_wav_dir) are the barge-in. interrupt_wav_dir defaults to wav_dir if omitted. Use --generate-wavs for synthetic fallback.",
+  "wav_dir": "~/backend/harness/LatencySet_v1/audio",
+  "interrupt_wav_dir": "~/backend/harness/BargeInSet_v1/audio",
+  "scenarios": [
+    {
+      "id": "bi_01_story_interrupt",
+      "description": "Ask for a long story, interrupt mid-response",
+      "trigger_file": "L01_story_long.wav",
+      "interrupt_file": "S01_simple_barge_in.wav",
+      "delay_before_interrupt_s": 1.5,
+      "expected_interrupt_latency_ms": 600
+    },
+    {
+      "id": "bi_02_game_interrupt",
+      "description": "Ask a long game question, interrupt mid-response",
+      "trigger_file": "L04_game_long.wav",
+      "interrupt_file": "S01_simple_barge_in.wav",
+      "delay_before_interrupt_s": 2.0,
+      "expected_interrupt_latency_ms": 600
+    },
+    {
+      "id": "bi_03_early_interrupt",
+      "description": "Interrupt very quickly (0.5s) after TTS starts",
+      "trigger_file": "L01_story_long.wav",
+      "interrupt_file": "S02_simple_barge_in.wav",
+      "delay_before_interrupt_s": 0.5,
+      "expected_interrupt_latency_ms": 600
+    }
+  ]
+}

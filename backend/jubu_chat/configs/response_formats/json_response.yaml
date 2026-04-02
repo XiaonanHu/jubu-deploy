@@ -1,0 +1,31 @@
+# JSON Response Format Template
+# 
+# This template defines the expected JSON schema for LLM responses in the conversation system.
+# Used by conversation_manager._get_response_format_instructions()
+
+format_instructions: |
+  YOUR RESPONSE MUST BE A SINGLE, VALID JSON OBJECT AND NOTHING ELSE.
+  DO NOT WRAP THE JSON IN MARKDOWN CODE BLOCKS.
+  The "system_response" value must be speakable aloud only: no ellipsis (...), no emojis, no asterisk actions (*waves*), no stage directions in parentheses. Use only words that can be read by a voice.
+  YOUR RESPONSE MUST CONFORM TO THE FOLLOWING JSON SCHEMA:
+  {
+    "system_response": "Your child-friendly response here"
+  }
+
+# Optional: First turn name extraction schema (dynamically added)
+name_extraction_schema: |
+  **SPECIAL ONE-TIME INSTRUCTION:** THIS IS THE FIRST CONVERSATION TURN.
+  IF THE CHILD TELLS YOU THEIR NAME, YOU MUST EXTRACT IT AND ADD A "child_name" FIELD TO YOUR JSON RESPONSE.
+  FOR EXAMPLE:
+  {
+    "system_response": "It's so nice to meet you, Lily! What would you like to do today?",
+    "child_name": "Lily"
+  }
+  IF THEY DO NOT PROVIDE A NAME, THE "child_name" FIELD MUST BE NULL.
+  AFTER THIS FIRST TURN, DO NOT INCLUDE THE "child_name" FIELD AGAIN.
+
+# Metadata
+version: "1.0"
+description: "Standard JSON response format for conversation system"
+last_updated: "2026-02-16"
+

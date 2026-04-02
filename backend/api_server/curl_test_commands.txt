@@ -1,0 +1,47 @@
+# Voice Chat Server Test Commands
+# Make sure the server is running: uvicorn api_server.voice_chat_server:app --host 0.0.0.0 --port 8000 --reload
+
+# 1. Test server health (should return FastAPI docs)
+curl -X GET "http://localhost:8000/docs"
+
+# 2. Initialize a conversation
+curl -X POST "http://localhost:8000/initialize_conversation" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "interaction_type": "chitchat",
+    "model": "gemini-2.0-flash",
+    "stt_provider": "openai",
+    "tts_provider": "elevenlabs"
+  }'
+
+# 3. Initialize a conversation with custom parameters
+curl -X POST "http://localhost:8000/initialize_conversation" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "interaction_type": "storytelling",
+    "model": "claude",
+    "stt_provider": "google",
+    "tts_provider": "openai",
+    "child_id": "test-child-123",
+    "child_profile_path": "child_profile.json",
+    "tts_voice": "alloy"
+  }'
+
+# 4. Test invalid conversation (should handle gracefully)
+curl -X POST "http://localhost:8000/initialize_conversation" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "interaction_type": "invalid_type",
+    "model": "invalid_model",
+    "stt_provider": "invalid_stt",
+    "tts_provider": "invalid_tts"
+  }'
+
+# 5. WebSocket connection test (requires a WebSocket client)
+# You can use wscat or a browser WebSocket client:
+# wscat -c ws://localhost:8000/ws/{conversation_id}
+# 
+# Example WebSocket messages to send:
+# {"type": "calibration", "data": {}}
+# {"type": "text", "data": {"text": "Hello, how are you?"}}
+# {"type": "ping", "data": {}} 

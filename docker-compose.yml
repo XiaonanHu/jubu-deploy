@@ -1,0 +1,155 @@
+# ==========================================================
+# Jubu Cloud Deployment — Docker Compose
+# ==========================================================
+#
+# Services:
+#   nginx       — TLS termination + reverse proxy
+#   livekit     — LiveKit WebRTC server
+#   backend     — Child-facing backend (API 8001 + Thinker + Bot Manager)
+#   parent-api  — Parent-facing REST API (port 8000)
+#   redis       — Pub/sub + caching for backend
+#   postgres    — Shared database (replaces SQLite)
+#   certbot     — Auto-renewing SSL certificates
+#
+# Usage:
+#   1. cp .env.template .env  → fill in secrets
+#   2. docker compose up -d
+#   3. First time: bash scripts/setup-ssl.sh
+# ==========================================================
+
+services:
+
+  # ──────────────────────────────────────────────
+  # Reverse Proxy — TLS termination
+  # ──────────────────────────────────────────────
+  nginx:
+    image: nginx:alpine
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
+      - certbot-webroot:/var/www/certbot:ro
+      - certbot-certs:/etc/letsencrypt:ro
+    depends_on:
+      - backend
+      - parent-api
+      - livekit
+    restart: unless-stopped
+
+  # ──────────────────────────────────────────────
+  # SSL Certificate Auto-Renewal
+  # ──────────────────────────────────────────────
+  certbot:
+    image: certbot/certbot
+    volumes:
+      - certbot-webroot:/var/www/certbot
+      - certbot-certs:/etc/letsencrypt
+    entrypoint: >
+      /bin/sh -c 'trap exit TERM;
+      while :; do certbot renew --webroot -w /var/www/certbot;
+      sleep 43200 & wait $${!}; done;'
+    restart: unless-stopped
+
+  # ──────────────────────────────────────────────
+  # LiveKit Server
+  # ──────────────────────────────────────────────
+  livekit:
+    image: livekit/livekit-server:latest
+    command: >
+      --config /etc/livekit.yaml
+      --node-ip ${PUBLIC_IP}
+      --bind 0.0.0.0
+    volumes:
+      - ./docker/livekit-production.yaml:/etc/livekit.yaml:ro
+    environment:
+      - LIVEKIT_KEYS=${LIVEKIT_API_KEY}:${LIVEKIT_API_SECRET}
+    ports:
+      # TCP signaling exposed through nginx on 443,
+      # but WebRTC media MUST be exposed directly:
+      - "7881:7881/tcp"
+      - "7882-7982:7882-7982/udp"
+    restart: unless-stopped
+
+  # ──────────────────────────────────────────────
+  # Child-Facing Backend
+  # (livekit_api.py:8001 + jubu_thinker.py + bot_manager.py)
+  # ──────────────────────────────────────────────
+  backend:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.backend
+    env_file:
+      - .env
+    environment:
+      # Override local-dev values for cloud
+      - LIVEKIT_URL=wss://lk.buju.ai
+      - DATABASE_URI=postgresql://jubu:${POSTGRES_PASSWORD}@postgres:5432/jubu
+      - REDIS_URL=redis://redis:6379/0
+    volumes:
+      - ./credentials:/app/credentials:ro
+    depends_on:
+      redis:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
+      livekit:
+        condition: service_started
+    restart: unless-stopped
+
+  # ──────────────────────────────────────────────
+  # Parent-Facing API (app_backend/)
+  # Shares the same PostgreSQL database
+  # ──────────────────────────────────────────────
+  parent-api:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.parent-api
+    env_file:
+      - .env
+    environment:
+      - DATABASE_URI=postgresql://jubu:${POSTGRES_PASSWORD}@postgres:5432/jubu
+    volumes:
+      - ./credentials:/app/credentials:ro
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: unless-stopped
+
+  # ──────────────────────────────────────────────
+  # Redis
+  # ──────────────────────────────────────────────
+  redis:
+    image: redis:7-alpine
+    volumes:
+      - redis-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+    restart: unless-stopped
+
+  # ──────────────────────────────────────────────
+  # PostgreSQL (replaces shared SQLite)
+  # ──────────────────────────────────────────────
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: jubu
+      POSTGRES_USER: jubu
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U jubu"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+    restart: unless-stopped
+
+volumes:
+  redis-data:
+  postgres-data:
+  certbot-webroot:
+  certbot-certs:

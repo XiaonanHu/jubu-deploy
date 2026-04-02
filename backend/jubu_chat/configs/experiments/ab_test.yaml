@@ -1,0 +1,30 @@
+experiment_id: "ab_test"
+description: "A/B test comparing different temperature settings for response generation"
+start_date: "2024-06-01"
+end_date: "2024-07-01"
+variants:
+  control:
+    weight: 0.5
+    model:
+      temperature: 0.2
+    conversation:
+      threshold: 0.7
+    response_formatting:
+      max_sentences: 3
+      max_words_per_sentence: 12
+  treatment:
+    weight: 0.5
+    model:
+      temperature: 0.4
+    conversation:
+      threshold: 0.6
+    response_formatting:
+      max_sentences: 4
+      max_words_per_sentence: 15
+metrics:
+  - name: "engagement_time"
+    description: "Time spent in conversation"
+  - name: "response_satisfaction"
+    description: "User satisfaction with responses"
+  - name: "conversation_completion"
+    description: "Whether conversations reach a natural conclusion"
