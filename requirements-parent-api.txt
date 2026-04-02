@@ -1,0 +1,17 @@
+# Parent-Facing API — Deployment Requirements
+fastapi==0.115.7
+uvicorn==0.34.0
+python-dotenv==1.0.1
+python-multipart==0.0.20
+pydantic==2.10.6
+pydantic-settings==2.9.1
+pydantic_core==2.27.2
+SQLAlchemy==2.0.37
+alembic==1.14.1
+psycopg2-binary==2.9.10
+bcrypt==4.3.0
+passlib==1.7.4
+PyJWT==2.10.1
+cryptography==44.0.3
+loguru==0.7.3
+python-dateutil

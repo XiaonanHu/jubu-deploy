@@ -1,0 +1,72 @@
+# ============================================================
+# Jubu Child-Facing Backend
+# Clones from GitHub — no local file copying needed
+# Runs: livekit_api.py (8001), jubu_thinker.py, bot_manager.py
+# ============================================================
+FROM python:3.12-slim AS base
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    build-essential \
+    portaudio19-dev \
+    libsndfile1 \
+    ffmpeg \
+    curl \
+    git \
+    && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /app
+
+# ---------- Python dependencies ----------
+COPY requirements-deploy.txt .
+RUN pip install --no-cache-dir -r requirements-deploy.txt
+RUN pip install --no-cache-dir supervisor sounddevice==0.5.1
+
+# ---------- Clone repos from GitHub ----------
+ARG GITHUB_TOKEN
+ARG BACKEND_BRANCH=main
+ARG DATASTORE_BRANCH=main
+
+# Clone jubu_backend
+RUN git clone --depth 1 --branch ${BACKEND_BRANCH} \
+    https://${GITHUB_TOKEN}@github.com/XiaonanHu/jubu_backend.git /tmp/jubu_backend
+
+# Clone jubu_datastore
+RUN git clone --depth 1 --branch ${DATASTORE_BRANCH} \
+    https://${GITHUB_TOKEN}@github.com/XiaonanHu/jubu_datastore.git /app/jubu_datastore
+
+# ---------- Install packages ----------
+# Install jubu_datastore
+RUN pip install --no-cache-dir -e /app/jubu_datastore
+
+# Copy only the files needed to RUN the backend (not tests, docs, logs, etc.)
+RUN cp /tmp/jubu_backend/livekit_api.py /app/ && \
+    cp /tmp/jubu_backend/jubu_thinker.py /app/ && \
+    cp /tmp/jubu_backend/bot_manager.py /app/ && \
+    cp /tmp/jubu_backend/livekit_bot.py /app/ && \
+    cp /tmp/jubu_backend/__init__.py /app/ && \
+    cp /tmp/jubu_backend/child_profile.json /app/ && \
+    cp -r /tmp/jubu_backend/jubu_chat /app/jubu_chat && \
+    cp -r /tmp/jubu_backend/api_server /app/api_server && \
+    cp -r /tmp/jubu_backend/speech_services /app/speech_services && \
+    cp -r /tmp/jubu_backend/infrastructure /app/infrastructure && \
+    cp -r /tmp/jubu_backend/utils /app/utils && \
+    cp -r /tmp/jubu_backend/tools /app/tools && \
+    cp /tmp/jubu_backend/setup.py /app/ && \
+    cp /tmp/jubu_backend/pyproject.toml /app/
+
+# Install jubu_chat if it has a setup.py
+RUN if [ -f /app/jubu_chat/setup.py ] || [ -f /app/jubu_chat/pyproject.toml ]; then \
+        pip install --no-cache-dir -e /app/jubu_chat; \
+    fi
+
+# Clean up the full clone
+RUN rm -rf /tmp/jubu_backend
+
+# ---------- Supervisord config ----------
+COPY docker/supervisord-backend.conf /etc/supervisor/conf.d/supervisord.conf
+
+# ---------- Health check ----------
+HEALTHCHECK --interval=10s --timeout=5s --retries=3 \
+    CMD curl -f http://localhost:8001/health || exit 1
+
+CMD ["supervisord", "-c", "/etc/supervisor/conf.d/supervisord.conf"]

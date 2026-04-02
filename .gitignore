@@ -1,0 +1,15 @@
+# Secrets — NEVER commit these
+.env
+credentials/
+
+# Local build artifacts — created by old rsync workflow
+backend/
+parent-api/
+
+# OS junk
+.DS_Store
+*.swp
+*~
+
+# Docker
+*.log

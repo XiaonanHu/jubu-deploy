@@ -1,0 +1,149 @@
+# ==========================================================
+# Jubu Cloud Deployment — Docker Compose
+# ==========================================================
+#
+# Deploy workflow:
+#   cd ~/jubu-deploy && git pull
+#   docker compose build --build-arg GITHUB_TOKEN=$GITHUB_TOKEN
+#   docker compose up -d
+# ==========================================================
+
+services:
+
+  # ──────────────────────────────────────────────
+  # Reverse Proxy — TLS termination
+  # ──────────────────────────────────────────────
+  nginx:
+    image: nginx:alpine
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
+      - certbot-webroot:/var/www/certbot:ro
+      - certbot-certs:/etc/letsencrypt:ro
+    depends_on:
+      - backend
+      - parent-api
+      - livekit
+    restart: unless-stopped
+
+  # ──────────────────────────────────────────────
+  # SSL Certificate Auto-Renewal
+  # ──────────────────────────────────────────────
+  certbot:
+    image: certbot/certbot
+    volumes:
+      - certbot-webroot:/var/www/certbot
+      - certbot-certs:/etc/letsencrypt
+    entrypoint: >
+      /bin/sh -c 'trap exit TERM;
+      while :; do certbot renew --webroot -w /var/www/certbot;
+      sleep 43200 & wait $${!}; done;'
+    restart: unless-stopped
+
+  # ──────────────────────────────────────────────
+  # LiveKit Server
+  # ──────────────────────────────────────────────
+  livekit:
+    image: livekit/livekit-server:latest
+    command: >
+      --config /etc/livekit.yaml
+      --node-ip ${PUBLIC_IP}
+      --bind 0.0.0.0
+    volumes:
+      - ./docker/livekit-production.yaml:/etc/livekit.yaml:ro
+    environment:
+      - "LIVEKIT_KEYS=devkey: devkey-secret-at-least-32-characters!!"
+    ports:
+      - "7881:7881/tcp"
+      - "7882-7982:7882-7982/udp"
+    restart: unless-stopped
+
+  # ──────────────────────────────────────────────
+  # Child-Facing Backend
+  # ──────────────────────────────────────────────
+  backend:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.backend
+      args:
+        GITHUB_TOKEN: ${GITHUB_TOKEN}
+        BACKEND_BRANCH: ${BACKEND_BRANCH:-main}
+        DATASTORE_BRANCH: ${DATASTORE_BRANCH:-main}
+    env_file:
+      - .env
+    environment:
+      - LIVEKIT_URL=wss://lk.buju.ai
+      - DATABASE_URI=postgresql://jubu:${POSTGRES_PASSWORD}@postgres:5432/jubu
+      - REDIS_URL=redis://redis:6379/0
+    volumes:
+      - ./credentials:/app/credentials:ro
+    depends_on:
+      redis:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
+      livekit:
+        condition: service_started
+    restart: unless-stopped
+
+  # ──────────────────────────────────────────────
+  # Parent-Facing API
+  # ──────────────────────────────────────────────
+  parent-api:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.parent-api
+      args:
+        GITHUB_TOKEN: ${GITHUB_TOKEN}
+        PARENT_APP_BRANCH: ${PARENT_APP_BRANCH:-main}
+        DATASTORE_BRANCH: ${DATASTORE_BRANCH:-main}
+    env_file:
+      - .env
+    environment:
+      - DATABASE_URI=postgresql://jubu:${POSTGRES_PASSWORD}@postgres:5432/jubu
+    volumes:
+      - ./credentials:/app/credentials:ro
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: unless-stopped
+
+  # ──────────────────────────────────────────────
+  # Redis
+  # ──────────────────────────────────────────────
+  redis:
+    image: redis:7-alpine
+    volumes:
+      - redis-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+    restart: unless-stopped
+
+  # ──────────────────────────────────────────────
+  # PostgreSQL
+  # ──────────────────────────────────────────────
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: jubu
+      POSTGRES_USER: jubu
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U jubu"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+    restart: unless-stopped
+
+volumes:
+  redis-data:
+  postgres-data:
+  certbot-webroot:
+  certbot-certs:

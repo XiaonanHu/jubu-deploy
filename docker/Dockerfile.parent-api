@@ -1,0 +1,51 @@
+# ============================================================
+# Jubu Parent-Facing API
+# Clones from GitHub — no local file copying needed
+# Runs: uvicorn on port 8000
+# ============================================================
+FROM python:3.12-slim
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    build-essential \
+    curl \
+    git \
+    && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /app
+
+# ---------- Python dependencies ----------
+COPY requirements-parent-api.txt .
+RUN pip install --no-cache-dir -r requirements-parent-api.txt
+
+# ---------- Clone repos from GitHub ----------
+ARG GITHUB_TOKEN
+ARG PARENT_APP_BRANCH=main
+ARG DATASTORE_BRANCH=main
+
+# Clone jubu_parent_app (we only need app_backend/)
+RUN git clone --depth 1 --branch ${PARENT_APP_BRANCH} \
+    https://${GITHUB_TOKEN}@github.com/XiaonanHu/jubu_parent_app.git /tmp/jubu_parent_app
+
+# Clone jubu_datastore (shared DB models)
+RUN git clone --depth 1 --branch ${DATASTORE_BRANCH} \
+    https://${GITHUB_TOKEN}@github.com/XiaonanHu/jubu_datastore.git /app/jubu_datastore
+
+# ---------- Install packages ----------
+RUN pip install --no-cache-dir -e /app/jubu_datastore
+
+# Copy only app_backend contents, preserving the package structure
+# main.py imports from app_backend.app.api... so we need that package name
+RUN cp /tmp/jubu_parent_app/app_backend/main.py /app/ && \
+    mkdir -p /app/app_backend && \
+    cp -r /tmp/jubu_parent_app/app_backend/app /app/app_backend/ && \
+    cp /tmp/jubu_parent_app/app_backend/__init__.py /app/app_backend/ 2>/dev/null || \
+    touch /app/app_backend/__init__.py
+
+# Clean up
+RUN rm -rf /tmp/jubu_parent_app
+
+# ---------- Health check ----------
+HEALTHCHECK NONE
+
+EXPOSE 8000
+CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
