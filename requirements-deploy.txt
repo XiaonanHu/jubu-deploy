@@ -57,3 +57,4 @@ tqdm==4.67.1
 regex==2024.11.6
 cryptography==44.0.3
 resampy==0.4.3
+setuptools==75.8.0
