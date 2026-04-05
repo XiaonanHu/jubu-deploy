@@ -12,10 +12,13 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     ffmpeg \
     curl \
     git \
+    tzdata \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
 ENV PYTHONPATH=/app
+ENV TZ=America/Los_Angeles
+RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
 
 # ---------- Python dependencies ----------
 COPY requirements-deploy.txt .
