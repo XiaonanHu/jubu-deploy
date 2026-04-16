@@ -75,7 +75,7 @@ services:
       - .env
     environment:
       - LIVEKIT_URL=wss://lk.buju.ai
-      - DATABASE_URI=postgresql://jubu:${POSTGRES_PASSWORD}@postgres:5432/jubu
+      - DATABASE_URL=postgresql://jubu:${POSTGRES_PASSWORD}@postgres:5432/jubu
       - REDIS_URL=redis://redis:6379/0
     volumes:
       - ./credentials:/app/credentials:ro
