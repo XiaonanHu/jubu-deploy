@@ -56,6 +56,7 @@ RUN cp /tmp/jubu_backend/livekit_api.py /app/ && \
     cp -r /tmp/jubu_backend/infrastructure /app/infrastructure && \
     cp -r /tmp/jubu_backend/utils /app/utils && \
     cp -r /tmp/jubu_backend/tools /app/tools && \
+    cp -r /tmp/jubu_backend/voice_profiles /app/voice_profiles && \
     cp /tmp/jubu_backend/setup.py /app/ && \
     cp /tmp/jubu_backend/pyproject.toml /app/
 
