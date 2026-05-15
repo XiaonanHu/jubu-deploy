@@ -1,0 +1,18 @@
+# Grafana dashboard provider — loads every JSON in /var/lib/grafana/dashboards.
+# Dashboards are committed to the repo so changes go through code review.
+# editable=true lets you experiment in the UI; export the modified JSON and
+# replace the file in the repo to make the change permanent.
+
+apiVersion: 1
+
+providers:
+  - name: buju
+    orgId: 1
+    folder: Buju
+    type: file
+    disableDeletion: false
+    updateIntervalSeconds: 30
+    allowUiUpdates: true
+    options:
+      path: /var/lib/grafana/dashboards
+      foldersFromFilesStructure: false

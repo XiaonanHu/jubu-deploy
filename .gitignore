@@ -1,6 +1,7 @@
 # Secrets — NEVER commit these
 .env
 credentials/
+nginx/htpasswd
 
 # Local build artifacts — created by old rsync workflow
 backend/

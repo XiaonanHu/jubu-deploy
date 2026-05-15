@@ -1,0 +1,59 @@
+{
+  "annotations": {"list": []},
+  "editable": true,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 0,
+  "id": null,
+  "links": [],
+  "liveNow": true,
+  "panels": [
+    {
+      "type": "table",
+      "title": "Recent turns (Phase 0 — text TRUNCATED at 80 chars; full content view + audit log lands in Phase 3)",
+      "id": 1,
+      "gridPos": {"h": 22, "w": 24, "x": 0, "y": 0},
+      "datasource": {"type": "postgres", "uid": "buju-postgres"},
+      "fieldConfig": {
+        "defaults": {"custom": {"align": "auto", "filterable": true}},
+        "overrides": [
+          {"matcher": {"id": "byName", "options": "child"}, "properties": [{"id": "custom.width", "value": 320}]},
+          {"matcher": {"id": "byName", "options": "buju"}, "properties": [{"id": "custom.width", "value": 420}]},
+          {"matcher": {"id": "byName", "options": "redacted"}, "properties": [{"id": "custom.cellOptions", "value": {"type": "color-text"}}, {"id": "thresholds", "value": {"mode": "absolute", "steps": [{"value": null, "color": "transparent"}, {"value": 1, "color": "red"}]}}]},
+          {"matcher": {"id": "byName", "options": "conversation_id"}, "properties": [{"id": "custom.width", "value": 280}]}
+        ]
+      },
+      "options": {"showHeader": true, "footer": {"show": false}},
+      "targets": [
+        {
+          "refId": "A",
+          "format": "table",
+          "rawSql": "SELECT t.timestamp AS ts, t.conversation_id, p.name AS who, LEFT(COALESCE(t.child_message, ''), 80) AS child, LEFT(COALESCE(t.system_message, ''), 80) AS buju, CASE WHEN t.safety_evaluation->>'redact_turn' = 'true' THEN 1 ELSE 0 END AS redacted FROM conversation_turns t LEFT JOIN conversations c ON c.id = t.conversation_id LEFT JOIN child_profiles p ON p.id = c.child_id WHERE (${conversation_id:singlequote} = 'all' OR t.conversation_id = ${conversation_id:singlequote}) ORDER BY t.timestamp DESC LIMIT 200",
+          "datasource": {"type": "postgres", "uid": "buju-postgres"}
+        }
+      ]
+    }
+  ],
+  "refresh": "10s",
+  "schemaVersion": 39,
+  "style": "dark",
+  "tags": ["buju", "turns"],
+  "templating": {
+    "list": [
+      {
+        "name": "conversation_id",
+        "type": "textbox",
+        "label": "Conversation id (or 'all')",
+        "current": {"text": "all", "value": "all"},
+        "query": "all",
+        "hide": 0
+      }
+    ]
+  },
+  "time": {"from": "now-6h", "to": "now"},
+  "timepicker": {},
+  "timezone": "browser",
+  "title": "Recent Turns",
+  "uid": "02-recent-turns",
+  "version": 1,
+  "weekStart": ""
+}

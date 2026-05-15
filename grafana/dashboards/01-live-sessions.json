@@ -1,0 +1,134 @@
+{
+  "annotations": {"list": []},
+  "editable": true,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 0,
+  "id": null,
+  "links": [],
+  "liveNow": true,
+  "panels": [
+    {
+      "type": "stat",
+      "title": "Active right now",
+      "id": 1,
+      "gridPos": {"h": 4, "w": 6, "x": 0, "y": 0},
+      "datasource": {"type": "postgres", "uid": "buju-postgres"},
+      "fieldConfig": {
+        "defaults": {"color": {"mode": "thresholds"}, "thresholds": {"mode": "absolute", "steps": [{"value": null, "color": "green"}]}, "unit": "none"},
+        "overrides": []
+      },
+      "options": {"reduceOptions": {"calcs": ["lastNotNull"], "fields": "", "values": false}, "textMode": "value", "colorMode": "value"},
+      "targets": [
+        {
+          "refId": "A",
+          "format": "table",
+          "rawSql": "SELECT COUNT(*) AS active FROM conversations WHERE state = 'active' AND last_interaction_time > NOW() - INTERVAL '5 minutes'",
+          "datasource": {"type": "postgres", "uid": "buju-postgres"}
+        }
+      ]
+    },
+    {
+      "type": "stat",
+      "title": "Sessions today",
+      "id": 2,
+      "gridPos": {"h": 4, "w": 6, "x": 6, "y": 0},
+      "datasource": {"type": "postgres", "uid": "buju-postgres"},
+      "fieldConfig": {"defaults": {"color": {"mode": "thresholds"}, "unit": "none"}, "overrides": []},
+      "options": {"reduceOptions": {"calcs": ["lastNotNull"]}, "textMode": "value", "colorMode": "value"},
+      "targets": [
+        {
+          "refId": "A",
+          "format": "table",
+          "rawSql": "SELECT COUNT(*) AS today FROM conversations WHERE start_time > NOW() - INTERVAL '24 hours'",
+          "datasource": {"type": "postgres", "uid": "buju-postgres"}
+        }
+      ]
+    },
+    {
+      "type": "stat",
+      "title": "Distinct children today",
+      "id": 3,
+      "gridPos": {"h": 4, "w": 6, "x": 12, "y": 0},
+      "datasource": {"type": "postgres", "uid": "buju-postgres"},
+      "fieldConfig": {"defaults": {"color": {"mode": "thresholds"}, "unit": "none"}, "overrides": []},
+      "options": {"reduceOptions": {"calcs": ["lastNotNull"]}, "textMode": "value", "colorMode": "value"},
+      "targets": [
+        {
+          "refId": "A",
+          "format": "table",
+          "rawSql": "SELECT COUNT(DISTINCT child_id) AS kids FROM conversations WHERE start_time > NOW() - INTERVAL '24 hours'",
+          "datasource": {"type": "postgres", "uid": "buju-postgres"}
+        }
+      ]
+    },
+    {
+      "type": "stat",
+      "title": "Avg turns per session (24h)",
+      "id": 4,
+      "gridPos": {"h": 4, "w": 6, "x": 18, "y": 0},
+      "datasource": {"type": "postgres", "uid": "buju-postgres"},
+      "fieldConfig": {"defaults": {"color": {"mode": "thresholds"}, "unit": "none", "decimals": 1}, "overrides": []},
+      "options": {"reduceOptions": {"calcs": ["lastNotNull"]}, "textMode": "value", "colorMode": "value"},
+      "targets": [
+        {
+          "refId": "A",
+          "format": "table",
+          "rawSql": "SELECT COALESCE(AVG(turn_count), 0) AS avg_turns FROM (SELECT c.id, COUNT(t.id) AS turn_count FROM conversations c LEFT JOIN conversation_turns t ON t.conversation_id = c.id WHERE c.start_time > NOW() - INTERVAL '24 hours' GROUP BY c.id) sub",
+          "datasource": {"type": "postgres", "uid": "buju-postgres"}
+        }
+      ]
+    },
+    {
+      "type": "table",
+      "title": "Active sessions (last 5 min of activity)",
+      "id": 10,
+      "gridPos": {"h": 12, "w": 24, "x": 0, "y": 4},
+      "datasource": {"type": "postgres", "uid": "buju-postgres"},
+      "fieldConfig": {
+        "defaults": {"custom": {"align": "auto", "filterable": true}, "color": {"mode": "thresholds"}},
+        "overrides": [
+          {"matcher": {"id": "byName", "options": "idle_seconds"}, "properties": [{"id": "unit", "value": "s"}, {"id": "custom.cellOptions", "value": {"type": "color-text"}}, {"id": "thresholds", "value": {"mode": "absolute", "steps": [{"value": null, "color": "green"}, {"value": 30, "color": "yellow"}, {"value": 90, "color": "red"}]}}]},
+          {"matcher": {"id": "byName", "options": "conversation_id"}, "properties": [{"id": "links", "value": [{"title": "View turns for this conversation", "url": "/d/02-recent-turns/recent-turns?var-conversation_id=${__value.raw}"}]}]}
+        ]
+      },
+      "options": {"showHeader": true},
+      "targets": [
+        {
+          "refId": "A",
+          "format": "table",
+          "rawSql": "SELECT c.id AS conversation_id, p.name AS child, p.age, c.start_time, c.last_interaction_time, EXTRACT(EPOCH FROM (NOW() - c.last_interaction_time))::int AS idle_seconds, (SELECT COUNT(*) FROM conversation_turns t WHERE t.conversation_id = c.id) AS turns FROM conversations c LEFT JOIN child_profiles p ON p.id = c.child_id WHERE c.state = 'active' AND c.last_interaction_time > NOW() - INTERVAL '15 minutes' ORDER BY c.last_interaction_time DESC",
+          "datasource": {"type": "postgres", "uid": "buju-postgres"}
+        }
+      ]
+    },
+    {
+      "type": "timeseries",
+      "title": "Sessions started per hour (7d)",
+      "id": 20,
+      "gridPos": {"h": 8, "w": 24, "x": 0, "y": 16},
+      "datasource": {"type": "postgres", "uid": "buju-postgres"},
+      "fieldConfig": {"defaults": {"custom": {"drawStyle": "bars", "fillOpacity": 50}, "unit": "short"}, "overrides": []},
+      "options": {"legend": {"showLegend": false}, "tooltip": {"mode": "single"}},
+      "targets": [
+        {
+          "refId": "A",
+          "format": "time_series",
+          "rawSql": "SELECT date_trunc('hour', start_time) AS time, COUNT(*) AS sessions FROM conversations WHERE start_time > NOW() - INTERVAL '7 days' GROUP BY 1 ORDER BY 1",
+          "datasource": {"type": "postgres", "uid": "buju-postgres"}
+        }
+      ]
+    }
+  ],
+  "refresh": "5s",
+  "schemaVersion": 39,
+  "style": "dark",
+  "tags": ["buju", "live"],
+  "templating": {"list": []},
+  "time": {"from": "now-6h", "to": "now"},
+  "timepicker": {},
+  "timezone": "browser",
+  "title": "Live Sessions",
+  "uid": "01-live-sessions",
+  "version": 1,
+  "weekStart": ""
+}

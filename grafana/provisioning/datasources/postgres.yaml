@@ -1,0 +1,25 @@
+# Grafana datasource provisioning.
+# Read-only Postgres role created by postgres/init/01-grafana-ro.sh.
+# Password resolved from the GRAFANA_RO_PASSWORD env var in the Grafana
+# container (passed through in docker-compose.yml).
+
+apiVersion: 1
+
+datasources:
+  - name: Buju Postgres
+    uid: buju-postgres
+    type: postgres
+    url: postgres:5432
+    user: grafana_ro
+    database: jubu
+    isDefault: true
+    secureJsonData:
+      password: "$GRAFANA_RO_PASSWORD"
+    jsonData:
+      sslmode: disable        # Internal docker network; nginx terminates TLS at the edge.
+      maxOpenConns: 4
+      maxIdleConns: 2
+      connMaxLifetime: 14400
+      postgresVersion: 1600
+      timescaledb: false
+    editable: false

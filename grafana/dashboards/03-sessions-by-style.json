@@ -1,0 +1,65 @@
+{
+  "annotations": {"list": []},
+  "editable": true,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 0,
+  "id": null,
+  "links": [],
+  "liveNow": false,
+  "panels": [
+    {
+      "type": "table",
+      "title": "Per-(child, style) bandit scores (current snapshot from child_profiles.preferences)",
+      "id": 1,
+      "description": "Phase 0 reads voice_style_scores from the JSON column populated by JubuAdapter._update_voice_style_score_for_session. Once Phase 1 lands telemetry_events, the per-session score TRAJECTORY will get its own panel.",
+      "gridPos": {"h": 12, "w": 24, "x": 0, "y": 0},
+      "datasource": {"type": "postgres", "uid": "buju-postgres"},
+      "fieldConfig": {
+        "defaults": {"custom": {"align": "auto", "filterable": true}},
+        "overrides": [
+          {"matcher": {"id": "byName", "options": "score"}, "properties": [{"id": "decimals", "value": 3}, {"id": "custom.cellOptions", "value": {"type": "color-background"}}, {"id": "thresholds", "value": {"mode": "absolute", "steps": [{"value": null, "color": "red"}, {"value": 0.5, "color": "yellow"}, {"value": 0.75, "color": "green"}]}}]},
+          {"matcher": {"id": "byName", "options": "n"}, "properties": [{"id": "custom.width", "value": 60}]}
+        ]
+      },
+      "options": {"showHeader": true, "sortBy": [{"displayName": "child", "desc": false}]},
+      "targets": [
+        {
+          "refId": "A",
+          "format": "table",
+          "rawSql": "WITH style_rows AS (SELECT p.name AS child, p.age, k AS codename, (v->>'n')::int AS n, (v->>'score')::float AS score FROM child_profiles p, LATERAL jsonb_each(COALESCE(p.preferences::jsonb->'voice_style_scores', '{}')) AS j(k, v)) SELECT child, age, codename, n, score FROM style_rows ORDER BY child, codename",
+          "datasource": {"type": "postgres", "uid": "buju-postgres"}
+        }
+      ]
+    },
+    {
+      "type": "barchart",
+      "title": "Sessions per style (last 7 days, from conv_metadata)",
+      "id": 2,
+      "description": "Reads style_codename out of conversations.conv_metadata. NULL means a session that ran before the dynamic-style telemetry landed.",
+      "gridPos": {"h": 10, "w": 24, "x": 0, "y": 12},
+      "datasource": {"type": "postgres", "uid": "buju-postgres"},
+      "fieldConfig": {"defaults": {"unit": "short"}, "overrides": []},
+      "options": {"orientation": "horizontal", "legend": {"showLegend": false}, "tooltip": {"mode": "single"}, "xField": "codename"},
+      "targets": [
+        {
+          "refId": "A",
+          "format": "table",
+          "rawSql": "SELECT COALESCE(conv_metadata->>'style_codename', '(no style metadata)') AS codename, COUNT(*) AS sessions FROM conversations WHERE start_time > NOW() - INTERVAL '7 days' GROUP BY 1 ORDER BY 2 DESC",
+          "datasource": {"type": "postgres", "uid": "buju-postgres"}
+        }
+      ]
+    }
+  ],
+  "refresh": "30s",
+  "schemaVersion": 39,
+  "style": "dark",
+  "tags": ["buju", "style"],
+  "templating": {"list": []},
+  "time": {"from": "now-7d", "to": "now"},
+  "timepicker": {},
+  "timezone": "browser",
+  "title": "Voice Style — Bandit Scores & Selection Mix",
+  "uid": "03-sessions-by-style",
+  "version": 1,
+  "weekStart": ""
+}
