@@ -1,0 +1,123 @@
+{
+  "annotations": {"list": []},
+  "editable": true,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 0,
+  "id": null,
+  "links": [],
+  "liveNow": true,
+  "panels": [
+    {
+      "type": "stat",
+      "title": "Events / 5 min (live)",
+      "id": 1,
+      "gridPos": {"h": 4, "w": 6, "x": 0, "y": 0},
+      "datasource": {"type": "postgres", "uid": "buju-postgres"},
+      "fieldConfig": {"defaults": {"unit": "short", "color": {"mode": "thresholds"}, "thresholds": {"mode": "absolute", "steps": [{"value": null, "color": "green"}, {"value": 1, "color": "blue"}]}}, "overrides": []},
+      "options": {"reduceOptions": {"calcs": ["lastNotNull"]}, "textMode": "value_and_name"},
+      "targets": [{"refId": "A", "format": "table", "rawSql": "SELECT COUNT(*) AS events FROM telemetry_events WHERE ts > NOW() - INTERVAL '5 minutes'", "datasource": {"type": "postgres", "uid": "buju-postgres"}}]
+    },
+    {
+      "type": "stat",
+      "title": "Style leaks last 24h",
+      "id": 2,
+      "gridPos": {"h": 4, "w": 6, "x": 6, "y": 0},
+      "datasource": {"type": "postgres", "uid": "buju-postgres"},
+      "fieldConfig": {"defaults": {"unit": "short", "color": {"mode": "thresholds"}, "thresholds": {"mode": "absolute", "steps": [{"value": null, "color": "green"}, {"value": 1, "color": "yellow"}, {"value": 5, "color": "red"}]}}, "overrides": []},
+      "options": {"reduceOptions": {"calcs": ["lastNotNull"]}, "textMode": "value"},
+      "targets": [{"refId": "A", "format": "table", "rawSql": "SELECT COUNT(*) AS leaks FROM telemetry_events WHERE event = 'style.leak' AND ts > NOW() - INTERVAL '24 hours'", "datasource": {"type": "postgres", "uid": "buju-postgres"}}]
+    },
+    {
+      "type": "stat",
+      "title": "Avg engagement score 24h (style.session_summary)",
+      "id": 3,
+      "gridPos": {"h": 4, "w": 6, "x": 12, "y": 0},
+      "datasource": {"type": "postgres", "uid": "buju-postgres"},
+      "fieldConfig": {"defaults": {"unit": "percentunit", "decimals": 2, "color": {"mode": "thresholds"}, "thresholds": {"mode": "absolute", "steps": [{"value": null, "color": "red"}, {"value": 0.5, "color": "yellow"}, {"value": 0.75, "color": "green"}]}}, "overrides": []},
+      "options": {"reduceOptions": {"calcs": ["lastNotNull"]}, "textMode": "value"},
+      "targets": [{"refId": "A", "format": "table", "rawSql": "SELECT AVG((fields->>'score')::float) AS score FROM telemetry_events WHERE event = 'style.session_summary' AND ts > NOW() - INTERVAL '24 hours'", "datasource": {"type": "postgres", "uid": "buju-postgres"}}]
+    },
+    {
+      "type": "stat",
+      "title": "Sentiment positivity 24h (style.turn_summary)",
+      "id": 4,
+      "gridPos": {"h": 4, "w": 6, "x": 18, "y": 0},
+      "datasource": {"type": "postgres", "uid": "buju-postgres"},
+      "fieldConfig": {"defaults": {"unit": "percentunit", "decimals": 2, "color": {"mode": "thresholds"}, "thresholds": {"mode": "absolute", "steps": [{"value": null, "color": "red"}, {"value": 0.5, "color": "yellow"}, {"value": 0.7, "color": "green"}]}}, "overrides": []},
+      "options": {"reduceOptions": {"calcs": ["lastNotNull"]}, "textMode": "value"},
+      "targets": [{"refId": "A", "format": "table", "rawSql": "SELECT AVG(CASE WHEN fields->>'sentiment' = 'positive' THEN 1 WHEN fields->>'sentiment' = 'negative' THEN 0 ELSE 0.5 END) AS positivity FROM telemetry_events WHERE event = 'style.turn_summary' AND ts > NOW() - INTERVAL '24 hours' AND fields->>'sentiment' IS NOT NULL", "datasource": {"type": "postgres", "uid": "buju-postgres"}}]
+    },
+    {
+      "type": "barchart",
+      "title": "style.selected — selection-reason mix (24h)",
+      "id": 10,
+      "description": "Distribution of how the bandit chose each session's voice — parent_override / cold_start / bandit_exploit / bandit_explore / bandit_unseen / bandit_fallback / default_only.",
+      "gridPos": {"h": 8, "w": 12, "x": 0, "y": 4},
+      "datasource": {"type": "postgres", "uid": "buju-postgres"},
+      "fieldConfig": {"defaults": {"unit": "short"}, "overrides": []},
+      "options": {"orientation": "horizontal", "legend": {"showLegend": false}, "xField": "reason"},
+      "targets": [{"refId": "A", "format": "table", "rawSql": "SELECT fields->>'reason' AS reason, COUNT(*) AS n FROM telemetry_events WHERE event = 'style.selected' AND ts > NOW() - INTERVAL '24 hours' GROUP BY 1 ORDER BY 2 DESC", "datasource": {"type": "postgres", "uid": "buju-postgres"}}]
+    },
+    {
+      "type": "barchart",
+      "title": "Leak terms — top 10 (7 days)",
+      "id": 11,
+      "description": "Which forbidden terms slip through Layer-A most often. Drives which words to tighten in HARD_CONSTRAINTS prompts.",
+      "gridPos": {"h": 8, "w": 12, "x": 12, "y": 4},
+      "datasource": {"type": "postgres", "uid": "buju-postgres"},
+      "fieldConfig": {"defaults": {"unit": "short"}, "overrides": []},
+      "options": {"orientation": "horizontal", "legend": {"showLegend": false}, "xField": "term"},
+      "targets": [{"refId": "A", "format": "table", "rawSql": "SELECT (fields->>'codename') || ' / ' || (fields->>'matched_term') AS term, COUNT(*) AS n FROM telemetry_events WHERE event = 'style.leak' AND ts > NOW() - INTERVAL '7 days' GROUP BY 1 ORDER BY 2 DESC LIMIT 10", "datasource": {"type": "postgres", "uid": "buju-postgres"}}]
+    },
+    {
+      "type": "timeseries",
+      "title": "Engagement score over time (style.session_summary)",
+      "id": 20,
+      "gridPos": {"h": 8, "w": 24, "x": 0, "y": 12},
+      "datasource": {"type": "postgres", "uid": "buju-postgres"},
+      "fieldConfig": {"defaults": {"custom": {"drawStyle": "points", "pointSize": 6, "fillOpacity": 0}, "unit": "percentunit", "min": 0, "max": 1}, "overrides": []},
+      "options": {"legend": {"showLegend": true, "displayMode": "table", "placement": "right", "calcs": ["mean"]}, "tooltip": {"mode": "multi"}},
+      "targets": [{"refId": "A", "format": "time_series", "rawSql": "SELECT ts AS time, (fields->>'score')::float AS value, fields->>'codename' AS metric FROM telemetry_events WHERE event = 'style.session_summary' AND ts > NOW() - INTERVAL '7 days' AND (fields->>'score') IS NOT NULL ORDER BY ts", "datasource": {"type": "postgres", "uid": "buju-postgres"}}]
+    },
+    {
+      "type": "table",
+      "title": "Recent events (last 100)",
+      "id": 30,
+      "gridPos": {"h": 14, "w": 24, "x": 0, "y": 20},
+      "datasource": {"type": "postgres", "uid": "buju-postgres"},
+      "fieldConfig": {
+        "defaults": {"custom": {"align": "auto", "filterable": true}},
+        "overrides": [
+          {"matcher": {"id": "byName", "options": "event"}, "properties": [{"id": "custom.width", "value": 220}]},
+          {"matcher": {"id": "byName", "options": "ts"}, "properties": [{"id": "custom.width", "value": 200}]},
+          {"matcher": {"id": "byName", "options": "conversation_id"}, "properties": [{"id": "custom.width", "value": 280}, {"id": "links", "value": [{"title": "View turns", "url": "/d/02-recent-turns/recent-turns?var-conversation_id=${__value.raw}"}]}]}
+        ]
+      },
+      "options": {"showHeader": true},
+      "targets": [{"refId": "A", "format": "table", "rawSql": "SELECT ts, event, conversation_id, child_id, fields::text AS fields FROM telemetry_events WHERE ${event:singlequote} = 'all' OR event = ${event:singlequote} ORDER BY ts DESC LIMIT 100", "datasource": {"type": "postgres", "uid": "buju-postgres"}}]
+    }
+  ],
+  "refresh": "10s",
+  "schemaVersion": 39,
+  "style": "dark",
+  "tags": ["buju", "telemetry"],
+  "templating": {
+    "list": [
+      {
+        "name": "event",
+        "type": "textbox",
+        "label": "Event filter (or 'all')",
+        "current": {"text": "all", "value": "all"},
+        "query": "all",
+        "hide": 0
+      }
+    ]
+  },
+  "time": {"from": "now-24h", "to": "now"},
+  "timepicker": {},
+  "timezone": "browser",
+  "title": "Telemetry Events (Phase 1)",
+  "uid": "04-telemetry-events",
+  "version": 1,
+  "weekStart": ""
+}
