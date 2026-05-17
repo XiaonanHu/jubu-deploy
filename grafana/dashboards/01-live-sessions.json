@@ -88,7 +88,7 @@
         "defaults": {"custom": {"align": "auto", "filterable": true}, "color": {"mode": "thresholds"}},
         "overrides": [
           {"matcher": {"id": "byName", "options": "idle_seconds"}, "properties": [{"id": "unit", "value": "s"}, {"id": "custom.cellOptions", "value": {"type": "color-text"}}, {"id": "thresholds", "value": {"mode": "absolute", "steps": [{"value": null, "color": "green"}, {"value": 30, "color": "yellow"}, {"value": 90, "color": "red"}]}}]},
-          {"matcher": {"id": "byName", "options": "conversation_id"}, "properties": [{"id": "links", "value": [{"title": "View turns for this conversation", "url": "/d/02-recent-turns/recent-turns?var-conversation_id=${__value.raw}"}]}]}
+          {"matcher": {"id": "byName", "options": "conversation_id"}, "properties": [{"id": "links", "value": [{"title": "View turns", "url": "/d/02-recent-turns/recent-turns?var-conversation_id=${__value.raw}"}, {"title": "Live stream", "url": "/viewer/conversation/${__value.raw}"}]}]}
         ]
       },
       "options": {"showHeader": true},
