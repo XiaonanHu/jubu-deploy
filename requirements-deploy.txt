@@ -37,7 +37,9 @@ elevenlabs==1.58.1
 assemblyai==0.40.2
 soundfile==0.13.1
 pydub==0.25.1
-webrtcvad==2.0.10
+webrtcvad==2.0.10     # kept for tools/test_barge_in.py only; production VAD is now silero-vad
+silero-vad==6.2.1    # production VAD (replaces webrtcvad in livekit_bot.py)
+onnxruntime==1.23.2  # required by silero-vad (ONNX runtime; model uses JIT path but onnxruntime is still pulled in)
 spacy==3.8.4
 thinc==8.3.4
 torch==2.2.2
