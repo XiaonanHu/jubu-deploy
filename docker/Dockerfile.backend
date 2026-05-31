@@ -21,6 +21,15 @@ ENV TZ=America/Los_Angeles
 RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
 
 # ---------- Python dependencies ----------
+# Install CPU-only torch and torchaudio first so pip does not pull in the
+# CUDA-enabled builds from PyPI. silero-vad imports torchaudio at the module
+# level; without this, the CUDA build gets installed and crashes on boot with
+# "libcudart.so: No such file or directory".
+RUN pip install --no-cache-dir \
+    --index-url https://download.pytorch.org/whl/cpu \
+    torch==2.2.2+cpu \
+    torchaudio==2.2.2+cpu
+
 COPY requirements-deploy.txt .
 RUN pip install --no-cache-dir -r requirements-deploy.txt
 RUN pip install --no-cache-dir supervisor sounddevice==0.5.1

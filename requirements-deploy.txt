@@ -42,7 +42,7 @@ silero-vad==6.2.1    # production VAD (replaces webrtcvad in livekit_bot.py)
 onnxruntime==1.23.2  # required by silero-vad (ONNX runtime; model uses JIT path but onnxruntime is still pulled in)
 spacy==3.8.4
 thinc==8.3.4
-torch==2.2.2
+torch==2.2.2+cpu  # CPU-only build; installed from pytorch.org/whl/cpu in Dockerfile.backend
 transformers==4.49.0
 tokenizers==0.21.0
 safetensors==0.5.3
