@@ -17,3 +17,4 @@ loguru==0.7.3
 python-dateutil
 anthropic>=0.40.0
 httpx>=0.23.0
+requests>=2.31.0
