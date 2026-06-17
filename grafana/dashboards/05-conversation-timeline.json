@@ -32,12 +32,12 @@
       "title": "Timeline — turns interleaved with the background logic (chronological)",
       "description": "Each TURN row (child + Buju) is followed in time order by the background events it triggered: the recorder's delta (what changed), topics generated, style/opener selection. This is the single-pane view for analysis.",
       "id": 2,
-      "gridPos": {"h": 26, "w": 24, "x": 0, "y": 4},
+      "gridPos": {"h": 32, "w": 24, "x": 0, "y": 4},
       "datasource": {"type": "postgres", "uid": "buju-postgres"},
       "fieldConfig": {
         "defaults": {"custom": {"align": "auto", "filterable": true, "cellOptions": {"type": "auto", "wrapText": true}}},
         "overrides": [
-          {"matcher": {"id": "byName", "options": "time"}, "properties": [{"id": "custom.width", "value": 170}]},
+          {"matcher": {"id": "byName", "options": "time"}, "properties": [{"id": "custom.width", "value": 150}]},
           {"matcher": {"id": "byName", "options": "type"}, "properties": [
             {"id": "custom.width", "value": 190},
             {"id": "mappings", "value": [
@@ -48,17 +48,17 @@
             ]},
             {"id": "custom.cellOptions", "value": {"type": "color-text"}}
           ]},
-          {"matcher": {"id": "byName", "options": "child"}, "properties": [{"id": "custom.width", "value": 300}]},
-          {"matcher": {"id": "byName", "options": "buju"}, "properties": [{"id": "custom.width", "value": 360}]},
-          {"matcher": {"id": "byName", "options": "background_logic"}, "properties": [{"id": "custom.width", "value": 520}]}
+          {"matcher": {"id": "byName", "options": "child"}, "properties": [{"id": "custom.width", "value": 260}]},
+          {"matcher": {"id": "byName", "options": "buju"}, "properties": [{"id": "custom.width", "value": 600}]},
+          {"matcher": {"id": "byName", "options": "background_logic"}, "properties": [{"id": "custom.width", "value": 560}]}
         ]
       },
-      "options": {"showHeader": true, "footer": {"show": false}},
+      "options": {"showHeader": true, "footer": {"show": false}, "cellHeight": "lg"},
       "targets": [
         {
           "refId": "A",
           "format": "table",
-          "rawSql": "SELECT \"time\", type, child, buju, background_logic FROM ( SELECT t.timestamp AS \"time\", 'TURN'::text AS type, COALESCE(t.child_message,'') AS child, COALESCE(t.system_message,'') AS buju, ''::text AS background_logic FROM conversation_turns t WHERE t.conversation_id = ${conversation_id:singlequote} UNION ALL SELECT e.ts AS \"time\", e.event AS type, ''::text AS child, ''::text AS buju, CASE e.event WHEN 'story.delta_emitted' THEN 'changed=' || COALESCE(e.fields->>'changed','[]') || CASE WHEN COALESCE(e.fields->>'topics_added','[]') NOT IN ('[]','') THEN '   +topics=' || (e.fields->>'topics_added') ELSE '' END || CASE WHEN COALESCE(e.fields->>'topic_focus','') <> '' THEN '   focus=' || (e.fields->>'topic_focus') ELSE '' END || CASE WHEN e.fields->>'changed' LIKE '%summary%' THEN '   summary=\"' || COALESCE(e.fields->>'summary','') || '\"' ELSE '' END || CASE WHEN e.fields->>'changed' LIKE '%scene%' THEN '   scene=' || COALESCE(e.fields->>'scene','') ELSE '' END || '   (' || COALESCE(e.fields->>'dur_ms','?') || 'ms)' WHEN 'story.topics_persisted' THEN 'topics=' || COALESCE(e.fields->>'n_topics','0') || '  child/buju=' || COALESCE(e.fields->>'n_child_origin','0') || '/' || COALESCE(e.fields->>'n_buju_origin','0') || '  main=' || COALESCE(e.fields->>'main_topic','') WHEN 'opener.selected' THEN COALESCE(NULLIF(e.fields->>'text',''), 'type=' || COALESCE(e.fields->>'opener_type','')) WHEN 'style.selected' THEN 'style=' || COALESCE(e.fields->>'codename','') || '   reason=' || COALESCE(e.fields->>'reason','') WHEN 'style.turn_summary' THEN 'mode=' || COALESCE(e.fields->>'mode','') || '  sentiment=' || COALESCE(e.fields->>'sentiment','') || '  words(child/bot)=' || COALESCE(e.fields->>'child_words','') || '/' || COALESCE(e.fields->>'bot_words','') WHEN 'style.session_summary' THEN 'score=' || COALESCE(e.fields->>'score','') || '  turns=' || COALESCE(e.fields->>'total_turns','') || '  sentiment=' || COALESCE(e.fields->>'sentiment','') WHEN 'style.leak' THEN 'LEAK: ' || COALESCE(e.fields->>'matched_term','') ELSE LEFT(e.fields::text, 240) END AS background_logic FROM telemetry_events e WHERE e.conversation_id = ${conversation_id:singlequote} ) x ORDER BY \"time\" ASC LIMIT 1000",
+          "rawSql": "SELECT \"time\", type, child, buju, background_logic FROM ( SELECT (t.timestamp AT TIME ZONE 'UTC') AS \"time\", 'TURN'::text AS type, COALESCE(t.child_message,'') AS child, COALESCE(t.system_message,'') AS buju, ''::text AS background_logic FROM conversation_turns t WHERE t.conversation_id = ${conversation_id:singlequote} UNION ALL SELECT (e.ts AT TIME ZONE 'UTC') AS \"time\", e.event AS type, ''::text AS child, ''::text AS buju, CASE e.event WHEN 'story.delta_emitted' THEN 'changed=' || COALESCE(e.fields->>'changed','[]') || CASE WHEN COALESCE(e.fields->>'topics_added','[]') NOT IN ('[]','') THEN '   +topics=' || (e.fields->>'topics_added') ELSE '' END || CASE WHEN COALESCE(e.fields->>'topic_focus','') <> '' THEN '   focus=' || (e.fields->>'topic_focus') ELSE '' END || CASE WHEN e.fields->>'changed' LIKE '%summary%' THEN '   summary=\"' || COALESCE(e.fields->>'summary','') || '\"' ELSE '' END || CASE WHEN e.fields->>'changed' LIKE '%scene%' THEN '   scene=' || COALESCE(e.fields->>'scene','') ELSE '' END || '   (' || COALESCE(e.fields->>'dur_ms','?') || 'ms)' WHEN 'story.topics_persisted' THEN 'topics=' || COALESCE(e.fields->>'n_topics','0') || '  child/buju=' || COALESCE(e.fields->>'n_child_origin','0') || '/' || COALESCE(e.fields->>'n_buju_origin','0') || '  main=' || COALESCE(e.fields->>'main_topic','') WHEN 'opener.selected' THEN COALESCE(NULLIF(e.fields->>'text',''), 'type=' || COALESCE(e.fields->>'opener_type','')) WHEN 'style.selected' THEN 'style=' || COALESCE(e.fields->>'codename','') || '   reason=' || COALESCE(e.fields->>'reason','') WHEN 'style.turn_summary' THEN 'mode=' || COALESCE(e.fields->>'mode','') || '  sentiment=' || COALESCE(e.fields->>'sentiment','') || '  words(child/bot)=' || COALESCE(e.fields->>'child_words','') || '/' || COALESCE(e.fields->>'bot_words','') WHEN 'style.session_summary' THEN 'score=' || COALESCE(e.fields->>'score','') || '  turns=' || COALESCE(e.fields->>'total_turns','') || '  sentiment=' || COALESCE(e.fields->>'sentiment','') WHEN 'style.leak' THEN 'LEAK: ' || COALESCE(e.fields->>'matched_term','') ELSE LEFT(e.fields::text, 240) END AS background_logic FROM telemetry_events e WHERE e.conversation_id = ${conversation_id:singlequote} ) x ORDER BY \"time\" ASC LIMIT 1000",
           "datasource": {"type": "postgres", "uid": "buju-postgres"}
         }
       ]
