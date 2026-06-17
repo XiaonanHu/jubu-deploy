@@ -1,0 +1,95 @@
+{
+  "annotations": {"list": []},
+  "editable": true,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 0,
+  "id": null,
+  "links": [
+    {"title": "Recent turns", "type": "link", "url": "/d/02-recent-turns/recent-turns?var-conversation_id=${conversation_id}", "targetBlank": true},
+    {"title": "Telemetry events", "type": "link", "url": "/d/04-telemetry-events/telemetry-events-phase-1", "targetBlank": true}
+  ],
+  "liveNow": true,
+  "panels": [
+    {
+      "type": "table",
+      "title": "Conversation header",
+      "id": 1,
+      "gridPos": {"h": 4, "w": 24, "x": 0, "y": 0},
+      "datasource": {"type": "postgres", "uid": "buju-postgres"},
+      "fieldConfig": {"defaults": {"custom": {"align": "auto"}}, "overrides": []},
+      "options": {"showHeader": true},
+      "targets": [
+        {
+          "refId": "A",
+          "format": "table",
+          "rawSql": "SELECT p.name AS child, p.age, c.state, c.start_time, c.last_interaction_time, (SELECT COUNT(*) FROM conversation_turns t WHERE t.conversation_id = c.id) AS turns, c.parent_summary FROM conversations c LEFT JOIN child_profiles p ON p.id = c.child_id WHERE c.id = ${conversation_id:singlequote}",
+          "datasource": {"type": "postgres", "uid": "buju-postgres"}
+        }
+      ]
+    },
+    {
+      "type": "table",
+      "title": "Timeline — turns interleaved with the background logic (chronological)",
+      "description": "Each TURN row (child + Buju) is followed in time order by the background events it triggered: the recorder's delta (what changed), topics generated, style/opener selection. This is the single-pane view for analysis.",
+      "id": 2,
+      "gridPos": {"h": 26, "w": 24, "x": 0, "y": 4},
+      "datasource": {"type": "postgres", "uid": "buju-postgres"},
+      "fieldConfig": {
+        "defaults": {"custom": {"align": "auto", "filterable": true, "cellOptions": {"type": "auto", "wrapText": true}}},
+        "overrides": [
+          {"matcher": {"id": "byName", "options": "time"}, "properties": [{"id": "custom.width", "value": 170}]},
+          {"matcher": {"id": "byName", "options": "type"}, "properties": [
+            {"id": "custom.width", "value": 190},
+            {"id": "mappings", "value": [
+              {"type": "value", "options": {"TURN": {"color": "green", "index": 0, "text": "🗣  TURN"}}},
+              {"type": "regex", "options": {"pattern": "^story\\.", "result": {"color": "purple", "index": 1}}},
+              {"type": "regex", "options": {"pattern": "^style\\.", "result": {"color": "blue", "index": 2}}},
+              {"type": "regex", "options": {"pattern": "^opener\\.", "result": {"color": "orange", "index": 3}}}
+            ]},
+            {"id": "custom.cellOptions", "value": {"type": "color-text"}}
+          ]},
+          {"matcher": {"id": "byName", "options": "child"}, "properties": [{"id": "custom.width", "value": 300}]},
+          {"matcher": {"id": "byName", "options": "buju"}, "properties": [{"id": "custom.width", "value": 360}]},
+          {"matcher": {"id": "byName", "options": "background_logic"}, "properties": [{"id": "custom.width", "value": 520}]}
+        ]
+      },
+      "options": {"showHeader": true, "footer": {"show": false}},
+      "targets": [
+        {
+          "refId": "A",
+          "format": "table",
+          "rawSql": "SELECT \"time\", type, child, buju, background_logic FROM ( SELECT t.timestamp AS \"time\", 'TURN'::text AS type, COALESCE(t.child_message,'') AS child, COALESCE(t.system_message,'') AS buju, ''::text AS background_logic FROM conversation_turns t WHERE t.conversation_id = ${conversation_id:singlequote} UNION ALL SELECT e.ts AS \"time\", e.event AS type, ''::text AS child, ''::text AS buju, CASE e.event WHEN 'story.delta_emitted' THEN 'changed=' || COALESCE(e.fields->>'changed','[]') || CASE WHEN COALESCE(e.fields->>'topics_added','[]') NOT IN ('[]','') THEN '   +topics=' || (e.fields->>'topics_added') ELSE '' END || CASE WHEN COALESCE(e.fields->>'topic_focus','') <> '' THEN '   focus=' || (e.fields->>'topic_focus') ELSE '' END || CASE WHEN e.fields->>'changed' LIKE '%summary%' THEN '   summary=\"' || COALESCE(e.fields->>'summary','') || '\"' ELSE '' END || CASE WHEN e.fields->>'changed' LIKE '%scene%' THEN '   scene=' || COALESCE(e.fields->>'scene','') ELSE '' END || '   (' || COALESCE(e.fields->>'dur_ms','?') || 'ms)' WHEN 'story.topics_persisted' THEN 'topics=' || COALESCE(e.fields->>'n_topics','0') || '  child/buju=' || COALESCE(e.fields->>'n_child_origin','0') || '/' || COALESCE(e.fields->>'n_buju_origin','0') || '  main=' || COALESCE(e.fields->>'main_topic','') WHEN 'opener.selected' THEN COALESCE(NULLIF(e.fields->>'text',''), 'type=' || COALESCE(e.fields->>'opener_type','')) WHEN 'style.selected' THEN 'style=' || COALESCE(e.fields->>'codename','') || '   reason=' || COALESCE(e.fields->>'reason','') WHEN 'style.turn_summary' THEN 'mode=' || COALESCE(e.fields->>'mode','') || '  sentiment=' || COALESCE(e.fields->>'sentiment','') || '  words(child/bot)=' || COALESCE(e.fields->>'child_words','') || '/' || COALESCE(e.fields->>'bot_words','') WHEN 'style.session_summary' THEN 'score=' || COALESCE(e.fields->>'score','') || '  turns=' || COALESCE(e.fields->>'total_turns','') || '  sentiment=' || COALESCE(e.fields->>'sentiment','') WHEN 'style.leak' THEN 'LEAK: ' || COALESCE(e.fields->>'matched_term','') ELSE LEFT(e.fields::text, 240) END AS background_logic FROM telemetry_events e WHERE e.conversation_id = ${conversation_id:singlequote} ) x ORDER BY \"time\" ASC LIMIT 1000",
+          "datasource": {"type": "postgres", "uid": "buju-postgres"}
+        }
+      ]
+    }
+  ],
+  "refresh": "10s",
+  "schemaVersion": 39,
+  "style": "dark",
+  "tags": ["buju", "timeline"],
+  "templating": {
+    "list": [
+      {
+        "name": "conversation_id",
+        "type": "query",
+        "label": "Conversation",
+        "datasource": {"type": "postgres", "uid": "buju-postgres"},
+        "definition": "conversations",
+        "query": "SELECT c.id AS \"__value\", COALESCE(p.name,'?') || '  ·  ' || to_char(c.start_time,'MM-DD HH24:MI') || '  ·  ' || left(c.id,8) AS \"__text\" FROM conversations c LEFT JOIN child_profiles p ON p.id = c.child_id ORDER BY c.start_time DESC LIMIT 100",
+        "refresh": 2,
+        "sort": 0,
+        "multi": false,
+        "includeAll": false,
+        "hide": 0
+      }
+    ]
+  },
+  "time": {"from": "now-7d", "to": "now"},
+  "timepicker": {},
+  "timezone": "browser",
+  "title": "Conversation Timeline",
+  "uid": "05-conversation-timeline",
+  "version": 1,
+  "weekStart": ""
+}
