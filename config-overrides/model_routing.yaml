@@ -1,0 +1,24 @@
+# ==========================================================================
+# Model routing override — HOT-EDITABLE IN PRODUCTION.
+#
+# This directory is bind-mounted into the backend and parent-api containers,
+# and MODEL_ROUTING_FILE points at this file. The backend re-reads it at
+# every conversation start, so editing this file on the host switches models
+# for all NEW conversations with zero downtime and no rebuild/restart.
+# Active conversations finish on the chain they started with.
+#
+# Chain entries are model config names: jubu_backend
+# jubu_chat/configs/models/<name>.yaml. First entry = primary, rest =
+# failover order. Env vars MODEL_CHAIN_<ROLE> / MODEL_CHAIN_DEFAULT (in
+# .env) take precedence over this file but require a container recreate.
+# ==========================================================================
+
+default_chain: [claude-haiku-4-5, gemini-3.5-flash]
+
+roles:
+  conversation:          [claude-haiku-4-5, gemini-3.5-flash]
+  safety_evaluation:     [claude-haiku-4-5, gemini-3.5-flash]
+  facts_extraction:      [claude-haiku-4-5, gemini-3.5-flash]
+  capability_evaluation: [claude-haiku-4-5, gemini-3.5-flash]
+  parent_summary:        [claude-haiku-4-5, gemini-3.5-flash]
+  parent_chat:           [claude-haiku-4-5, gemini-3.5-flash]

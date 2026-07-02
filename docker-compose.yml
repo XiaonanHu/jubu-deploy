@@ -79,8 +79,13 @@ services:
       - LIVEKIT_URL=wss://lk.buju.ai
       - DATABASE_URL=postgresql://jubu:${POSTGRES_PASSWORD}@postgres:5432/jubu
       - REDIS_URL=redis://redis:6379/0
+      # Model routing lives in the bind-mounted file below — re-read at every
+      # conversation start, so editing it on the host switches models for new
+      # conversations without a rebuild or restart.
+      - MODEL_ROUTING_FILE=/app/config-overrides/model_routing.yaml
     volumes:
       - ./credentials:/app/credentials:ro
+      - ./config-overrides:/app/config-overrides:ro
     depends_on:
       redis:
         condition: service_healthy
@@ -105,8 +110,11 @@ services:
       - .env
     environment:
       - DATABASE_URI=postgresql://jubu:${POSTGRES_PASSWORD}@postgres:5432/jubu
+      # Same hot-editable model routing as the backend (parent_chat role).
+      - MODEL_ROUTING_FILE=/app/config-overrides/model_routing.yaml
     volumes:
       - ./credentials:/app/credentials:ro
+      - ./config-overrides:/app/config-overrides:ro
     depends_on:
       postgres:
         condition: service_healthy

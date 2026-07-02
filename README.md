@@ -80,6 +80,28 @@ docker compose logs -f parent-api
 docker compose logs -f livekit
 ```
 
+### Switch LLM model or provider (zero downtime)
+Model choice lives in one file: `config-overrides/model_routing.yaml`
+(bind-mounted into backend and parent-api). Each role maps to a failover
+chain of model config names from jubu_backend `jubu_chat/configs/models/`.
+
+```bash
+# On the server — edit the chain, no rebuild, no restart:
+vim ~/jubu-deploy/config-overrides/model_routing.yaml
+# New conversations pick up the change immediately; active ones finish
+# on the old chain.
+```
+
+Failover is automatic: if the primary provider errors out, the next model
+in the chain serves the request, and a per-provider circuit breaker skips
+a downed provider for 30s at a time. Watch for `FAILOVER` /
+`Circuit breaker` WARNING lines in `docker compose logs backend`.
+
+Env vars `MODEL_CHAIN_<ROLE>` / `MODEL_CHAIN_DEFAULT` in `.env` override
+the file (comma-separated, e.g. `MODEL_CHAIN_CONVERSATION=gemini-3.5-flash,claude-haiku-4-5`)
+but require `docker compose up -d` to take effect. OpenRouter needs
+`OPENROUTER_API_KEY` in `.env`.
+
 ### Stop VM (save money)
 ```bash
 gcloud compute instances stop jubu-server --zone=us-west1-b
